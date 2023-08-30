@@ -12,6 +12,7 @@ psycopg2-binary = "*"
 setuptools = "*"
 wheel = "*" 
 twine = "*"
+inflect = "*"
 gamma = {file = "./"}
 
 [requires]

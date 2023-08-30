@@ -18,28 +18,16 @@ class Car(ObjectMetaModel):
     color: str
     miles: float
 
-# Initialize Cars table
-class Cars(Table):
-    def __init__(self, db):
-        super().__init__(db, Car, "Cars",
-            fields=['brand','model','year','color','miles'],
-            schema="""
-                brand TEXT NOT NULL,
-                model TEXT NOT NULL,
-                year INTEGER NOT NULL,
-                color TEXT NOT NULL,
-                miles REAL NOT NULL
-            """)
 
-cars_table = Cars(db)
+db.cars_table = Table(db, Car)
 
 # Add a new car
-new_car = Car(brand="Tesla", model="Model S", year=2020, color="Red", miles=1200.5)
-cars_table.add(new_car)
+db.new_car = Car(brand="Tesla", model="Model S", year=2020, color="Red", miles=1200.5)
+db.cars_table.add(new_car)
 
 # Fetch and delete a car
-result = cars_table.find_one(brand="Tesla", color="Red")
-cars_table.delete(result)
+result = db.cars_table.find_one(brand="Tesla", color="Red")
+db.cars_table.delete(result)
 
 # Close database
 db.close()
@@ -62,7 +50,7 @@ pip install gamma-kit
 
     ```python
     new_car = Car(brand="Tesla", model="Model S", year=2020, color="Blue", miles=1000.5)
-    cars_table.add(new_car)
+    db.cars_table.add(new_car)
     ```
 
 - Replace an existing record:
@@ -70,19 +58,19 @@ pip install gamma-kit
     ```python
     existing_car = cars_table.find_one(id=1)
     existing_car.color = "Green"
-    cars_table.replace(existing_car)
+    db.cars_table.replace(existing_car)
     ```
 
 - Count records:
 
     ```python
-    total_cars = cars_table.count()
+    total_cars = db.cars_table.count()
     ```
 
 - Pagination:
 
     ```python
-    page_1_results = cars_table.page(page_number=1, page_size=5)
+    page_1_results = db.cars_table.page(page_number=1, page_size=5)
     ```
 
 

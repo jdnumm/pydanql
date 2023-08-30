@@ -3,47 +3,75 @@ from uuid import uuid4
 from datetime import datetime
 from pydantic import BaseModel
 from http import HTTPStatus
+from typing import Type, Optional
+import inflect
+
+p = inflect.engine()
+
+def get_all_annotations(cls):
+    annotations = {}
+    for base in reversed(cls.__mro__):
+        annotations.update(getattr(base, '__annotations__', {}))
+    return annotations
 
 
 class Table:
-    META_SCHEMA = """
-        id SERIAL PRIMARY KEY,
-        date_created TEXT,
-        date_last_edit TEXT,
-        slug TEXT UNIQUE
-    """
-    META_FIELDS=['id','date_created','date_last_edit','slug']
+
+    TYPE_MAPPING = {
+        int: "INTEGER",
+        float: "REAL",
+        str: "TEXT",
+        bool: "BOOLEAN",
+        bytes: "BYTEA",
+        bytearray: "BYTEA",
+        memoryview: "BYTEA",
+        datetime: "TIMESTAMP",
+        # Add additional types as needed
+    }
 
 
-    def __init__(self, db, model, table, fields=None, schema=None, include_meta=True):
+    def __init__(self, db, model, table_name=None):
 
         self.db = db
         self.model = model
-        self.table = table
-        self.schema = self._generate_schema(schema, include_meta)
+        self.name = table_name or p.plural(self.model.__name__)
+        self.schema = self._generate_schema_from_model()
+        self.columns = self._generate_columns_from_model()
         self._create_table()
-        # Return list of Object models get columns from db. Maybe not the fastest method
-        self.columns = self.META_FIELDS+fields
 
-    def _generate_schema(self, schema=None, include_meta=True):
-        if schema is None:
-            s = self.META_SCHEMA
-        if include_meta:
-            s = self.META_SCHEMA + ',' + schema
-        return f"({s})"
+    def _generate_columns_from_model(self) -> str:
+        field_names = []
+        all_annotations = get_all_annotations(self.model)
+        for name in all_annotations.keys():
+            field_names.append(name)
+        return field_names
+
+    def _generate_schema_from_model(self) -> str:
+        columns = []
+        all_annotations = get_all_annotations(self.model)
+        for name, column in all_annotations.items():
+            field_type = column.__origin__ if hasattr(column, '__origin__') else column  # for Optional, List, etc.
+            column_type = self.TYPE_MAPPING.get(field_type, "TEXT")  # Default to TEXT
+
+            constraints = []
+            if 'Optional' in str(column):
+                constraints.append('NULL')
+            else:
+                constraints.append('NOT NULL')
+
+            columns.append(f"{name} {column_type} {' '.join(constraints)}")
+
+        return ", ".join(columns)
 
     def _create_table(self):
-        query = f"""
-        CREATE TABLE IF NOT EXISTS {self.table} {self.schema}
-        """
-        self.db.execute(query)
-        query = f"""
-        CREATE INDEX IF NOT EXISTS idx_slug ON {self.table}(slug)
-        """
+        schema = self._generate_schema_from_model()
+        print(schema)
+        query = f"CREATE TABLE IF NOT EXISTS {self.name} ({schema});"
         self.db.execute(query)
 
     def _construct_query_for_insert_or_replace(self, object: BaseModel, replace=False):
         columns = self.columns.copy()
+        print(columns)
 
         if replace:
             columns_str = ', '.join(columns)
@@ -51,7 +79,7 @@ class Table:
 
             updates = ', '.join([f"{field} = EXCLUDED.{field}" for field in columns])
             query = f"""
-                INSERT INTO {self.table} ({columns_str}) VALUES ({placeholders})
+                INSERT INTO {self.name} ({columns_str}) VALUES ({placeholders})
                 ON CONFLICT (id) DO UPDATE SET {updates}
             """
         else:
@@ -60,7 +88,7 @@ class Table:
 
             columns_str = ', '.join(columns)
             placeholders = ', '.join(['%s'] * len(columns))
-            query = f"INSERT INTO {self.table} ({columns_str}) VALUES ({placeholders})"
+            query = f"INSERT INTO {self.name} ({columns_str}) VALUES ({placeholders})"
 
         data = [getattr(object, field) for field in columns]
         return query, data
@@ -142,7 +170,7 @@ class Table:
         limit_clause, offset_clause = self._construct_pagination_clauses(offset, count)
         order_by_clause = self._construct_order_by_clause(sort)
 
-        query = f"SELECT * FROM {self.table} {where_clause} {order_by_clause} {limit_clause} {offset_clause}"
+        query = f"SELECT * FROM {self.name} {where_clause} {order_by_clause} {limit_clause} {offset_clause}"
 
         results = self.db.fetch(query, tuple(values))
 
@@ -158,7 +186,7 @@ class Table:
         """Returns the total number of records that match the given criteria."""
         where_clause, values = self._construct_where_clause(**kwargs)
 
-        query = f"SELECT COUNT(*) FROM {self.table} {where_clause}"
+        query = f"SELECT COUNT(*) FROM {self.name} {where_clause}"
         total_records = self.db.fetch(query, tuple(values))
         return total_records[0][0] if total_records else 0
 
@@ -185,7 +213,7 @@ class Table:
 
     def delete(self, object: BaseModel):
         # Constructing the SQL query for the delete operation
-        query = f'DELETE FROM {self.table} WHERE id = %s'
+        query = f'DELETE FROM {self.name} WHERE id = %s'
 
         try:
             self.db.execute(query, (object.id,))
@@ -210,10 +238,10 @@ class Table:
 
         # Calculate offset based on page number and page size
         offset = (page_number - 1) * page_size
-        
+
         # Use the find_many method to fetch the desired records
         results = self.find_many(offset=offset, count=page_size, **kwargs)
-        
+
         return results
 
     def page_count(self, page_size=10, **kwargs):

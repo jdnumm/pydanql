@@ -1,1 +1,1 @@
-from . import base, errors, models, table
+from . import base, errors, model, table
