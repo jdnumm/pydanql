@@ -4,15 +4,15 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name='gamma-kit',
+    name='pydanql',
     version='0.2',
     packages=find_packages(),
     install_requires=[
         'psycopg2-binary',
         'pydantic'
     ],
-    author='Johannes Daniel Nümm',
-    author_email='code@blacktre.es',
+    author='Daniel Nümm',
+    author_email='pydanql@blacktre.es',
     description='',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -25,5 +25,5 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Utilities'
     ],
-    py_modules=['gamma']
+    py_modules=['pydanql']
 )

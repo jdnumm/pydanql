@@ -1,42 +1,48 @@
-# Gamma Python PostgreSQL Library
+Get support from [BLACKTREES](https://blacktre.es)
+
+# Pydanql a Pydantic PostgreSQL Library
 
 ## Introduction
-The Gamma Library offers a simple and effective way to interact with a PostgreSQL database. It provides robust classes for database connections, data modeling, and CRUD (Create, Read, Update, Delete) operations. The library is equipped with built-in logging for easier debugging and error handling.
+The Pydanql Library offers a simple and effective way to interact with a PostgreSQL database. It provides robust classes for database connections, data modeling, and CRUD (Create, Read, Update, Delete) operations. The library is equipped with built-in logging for easier debugging and error handling.
 
 ## Quick Example
-Here's a brief example to show how to use the Gamma Python Library to interact with a PostgreSQL database, assuming that the relevant classes `Database`, `Table`, and `ObjectMetaModel` are imported from the Gamma package.
+Here's a brief example to show how to use the Pydanql Python Library to interact with a PostgreSQL database, assuming that the relevant classes `Database`, `Table`, and `ObjecBaseModel` are imported from the Pydanql package.
 
 ```python
+from pydanql.base import Database
+from pydanql.table import Table
+from pydanql.model import ObjectBaseModel
+
+
+# Define Book model as Pydantic Model
+class Book(ObjectBaseModel):
+    name: str
+    author: str
+    year: int
+
 # Initialize database
 db = Database(database='test_db', user='username', password='password', host='localhost', port=5432)
 
-# Define Car model
-class Car(ObjectMetaModel):
-    brand: str
-    model: str
-    year: int
-    color: str
-    miles: float
+# Initialize Table
+db.books = Table(db, Book)
 
+# Add a new Book
+new_book = Book(name="Herr der Ringe", author="Tolkin", year=1964)
+db.books.add(new_book)
 
-db.cars_table = Table(db, Car)
+# Find Books
+books= db.books.find_many()
+for book in books:
+    print(book)
 
-# Add a new car
-db.new_car = Car(brand="Tesla", model="Model S", year=2020, color="Red", miles=1200.5)
-db.cars_table.add(new_car)
-
-# Fetch and delete a car
-result = db.cars_table.find_one(brand="Tesla", color="Red")
-db.cars_table.delete(result)
-
-# Close database
+# Close Connection
 db.close()
 ```
 
 ## Installation
 To install, you can simply use pip:
 ```bash
-pip install gamma-kit
+pip install pydanql
 ```
 
 ## Components

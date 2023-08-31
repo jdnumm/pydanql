@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch
-from gamma.base import Database
-from gamma.errors import DatabaseError
+from pydanql.base import Database
+from pydanql.errors import DatabaseError
 
 
 def test_database_initialization():
