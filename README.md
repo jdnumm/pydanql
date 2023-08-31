@@ -80,8 +80,5 @@ pip install pydanql
     ```
 
 
-## Quick Note on Naming
-In Germany, the name "Gamma" is associated with the Mickey Mouse character Eega Beeva, who has the magical ability to store an endless number of objects in his pocket. Similar to Eega Beeva's pocket, the Gamma Python Library aims to provide a versatile and almost endless way to handle and store your database objects.
-
 ## License
-Gamma is licensed under the MIT license.
+Pydanql is licensed under the MIT license.
