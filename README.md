@@ -1,4 +1,4 @@
-Get support from [BLACKTREES](https://blacktre.es)
+Get support from [BLACKTREES](https://blacktre.es) or on [Github](https://github.com/jdnumm/pydanql)
 
 # Pydanql a Pydantic PostgreSQL Library
 
@@ -27,7 +27,7 @@ db = Database(database='test_db', user='username', password='password', host='lo
 db.books = Table(db, Book)
 
 # Add a new Book
-new_book = Book(name="Herr der Ringe", author="Tolkin", year=1964)
+new_book = Book(name="The Lord of the Rings", author="J. R. R. Tolkien", year=1964)
 db.books.add(new_book)
 
 # Find Books
@@ -47,7 +47,7 @@ pip install pydanql
 
 ## Components
 - `Database`: Manages the connection to a PostgreSQL database.
-- `ObjectMetaModel`: A base Pydantic model with some default fields.
+- `ObjectBaseModel`: A base Pydantic model with some default fields.
 - `Table`: A generic class to manage database tables.
 - `DatabaseError`: A custom exception class for database-related issues.
 
