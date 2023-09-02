@@ -75,10 +75,17 @@ class Table:
             # Handle Optional, List, etc.
             field_type = column.__origin__ if hasattr(column, '__origin__') else column  
             # Default to TEXT type if not found in TYPE_MAPPING
-            column_type = self.TYPE_MAPPING.get(field_type, "TEXT")  
+            column_type = self.TYPE_MAPPING.get(field_type, "TEXT")
 
             constraints = []
-            if 'Optional' in str(column):
+
+            # Get constraints and data type if defined on pydantic Field
+            pydantic_field = self.model.__fields__[name]
+            if pydantic_field.json_schema_extra:
+                constraints.extend(pydantic_field.json_schema_extra.get('constraints'))
+                if pydantic_field.json_schema_extra.get('data_type'):
+                    column_type = pydantic_field.json_schema_extra.get('data_type')
+            elif 'Optional' in str(column):
                 constraints.append('NULL')
             else:
                 constraints.append('NOT NULL')

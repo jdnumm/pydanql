@@ -20,8 +20,8 @@ class ObjectBaseModel(BaseModel):
 
     # A unique identifier (UUID) for the object, converted to a hexadecimal string.
     # It is Optional, and by default, a unique hex string will be generated.
-    slug: Optional[str] = uuid4().hex
+    slug: Optional[str] = Field(default=uuid4().hex, constraints=["UNIQUE", "NULL"])
 
     # An integer ID for the object.
     # It is Optional and defaults to None, which allows the database to auto-generate it.
-    id: Optional[int] = None
+    id: Optional[int] = Field(default=None, data_type="SERIAL", constraints=["PRIMARY KEY"])
