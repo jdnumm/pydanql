@@ -3,7 +3,8 @@ from uuid import uuid4
 from datetime import datetime
 from pydantic import BaseModel
 from http import HTTPStatus
-from typing import Type, Optional
+from typing import Type, Optional, Tuple, List
+import json
 import inflect
 
 # Initialize the inflect engine
@@ -24,12 +25,25 @@ def get_all_annotations(cls):
         annotations.update(getattr(base, '__annotations__', {}))
     return annotations
 
+def convert_to_pg_array(py_tuple):
+    return '{' + ','.join(map(str, py_tuple)) + '}'
+
+def convert_to_pg_array(py_tuple):
+    return '{' + ','.join(map(str, py_tuple)) + '}'
+
+def convert_to_pg_datetime(py_datetime):
+    return py_datetime.isoformat()
+
+def convert_to_pg_json(py_dict):
+    return json.dumps(py_dict)
+
+
 class Table:
     """
     Represents a database table.
 
     Attributes:
-    - TYPE_MAPPING: Maps Python types to SQL column types.
+    - TYPE_MAPPING: Maps Python base types to SQL column types.
     """
     TYPE_MAPPING = {
         int: "INTEGER",
@@ -39,8 +53,6 @@ class Table:
         bytes: "BYTEA",
         bytearray: "BYTEA",
         memoryview: "BYTEA",
-        datetime: "TIMESTAMP",
-        # Add additional types as needed
     }
 
     def __init__(self, db, model, table_name=None):
@@ -73,16 +85,16 @@ class Table:
         all_annotations = get_all_annotations(self.model)
         for name, column in all_annotations.items():
             # Handle Optional, List, etc.
-            field_type = column.__origin__ if hasattr(column, '__origin__') else column  
+            field_type = column.__origin__ if hasattr(column, '__origin__') else column
             # Default to TEXT type if not found in TYPE_MAPPING
+            # TODO: This should be merged with the next step and throw  an error if it can't be mapped.
             column_type = self.TYPE_MAPPING.get(field_type, "TEXT")
 
             constraints = []
-
             # Get constraints and data type if defined on pydantic Field
             pydantic_field = self.model.__fields__[name]
             if pydantic_field.json_schema_extra:
-                constraints.extend(pydantic_field.json_schema_extra.get('constraints'))
+                constraints.extend(pydantic_field.json_schema_extra.get('constraints', []))
                 if pydantic_field.json_schema_extra.get('data_type'):
                     column_type = pydantic_field.json_schema_extra.get('data_type')
             elif 'Optional' in str(column):
@@ -97,7 +109,6 @@ class Table:
     def _create_table(self):
         """Create the table if it doesn't exist."""
         schema = self._generate_schema_from_model()
-        print(schema)
         query = f"CREATE TABLE IF NOT EXISTS {self.name} ({schema});"
         self.db.execute(query)
 
@@ -113,7 +124,6 @@ class Table:
         - The constructed query and data
         """
         columns = self.columns.copy()
-        print(columns)
 
         # Handle the 'replace' case
         if replace:
@@ -134,7 +144,21 @@ class Table:
             placeholders = ', '.join(['%s'] * len(columns))
             query = f"INSERT INTO {self.name} ({columns_str}) VALUES ({placeholders})"
 
-        data = [getattr(object, field) for field in columns]
+
+        # Now convert data if needet
+        #data = [getattr(object, field) for field in columns]
+        data = []
+        for field in columns:
+            value = getattr(object, field)
+            
+            if isinstance(value, tuple):
+                data.append(convert_to_pg_array(value))
+            elif isinstance(value, datetime):
+                data.append(convert_to_pg_datetime(value))
+            elif isinstance(value, dict):
+                data.append(convert_to_pg_json(value))
+            else:
+                data.append(value)
         return query, data
 
     def _construct_where_clause(self, **kwargs):
@@ -158,7 +182,6 @@ class Table:
             if isinstance(value, dict):
                 # Handle LIKE query
                 if 'like' in value:
-                    print('like search')
                     clauses.append(f"{key} LIKE %s")
                     values.append(value['like'].replace('*','%'))
                 # Handle range query
