@@ -5,11 +5,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='pydanql',
-    version='0.23-alpha',
+    version='0.24-alpha',
     packages=find_packages(),
     install_requires=[
-        'psycopg2-binary',
-        'pydantic'
+        'psycopg2>=2.9.0',
+        'pydantic>=2.3.0',
+        'inflect>=7.0.0'
     ],
     author='Daniel Nümm',
     author_email='pydanql@blacktre.es',
