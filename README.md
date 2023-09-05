@@ -49,6 +49,20 @@ To install the Pydanql library, run the following pip command:
 pip install pydanql
 ```
 
+## Create a Database
+
+Create a user and a database
+
+```BASH
+psql postgres # Connect to your database server
+```
+
+```SQL
+CREATE DATABASE testdb;
+CREATE USER testuser WITH PASSWORD 'testpass';
+GRANT ALL PRIVILEGES ON DATABASE testdb TO testuser;
+```
+
 ## Components
 
 - `Database`: Manages the connection to a PostgreSQL database.
